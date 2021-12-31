@@ -157,60 +157,6 @@ Wire Wire Line
 Wire Wire Line
 	1350 5000 1950 5000
 Connection ~ 1950 5000
-$Comp
-L Regulator_Linear:L7805 U1
-U 1 1 61C79AB5
-P 2100 2650
-F 0 "U1" H 2100 2892 50  0000 C CNN
-F 1 "L7805" H 2100 2801 50  0000 C CNN
-F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 2125 2500 50  0001 L CIN
-F 3 "http://www.st.com/content/ccc/resource/technical/document/datasheet/41/4f/b3/b0/12/d4/47/88/CD00000444.pdf/files/CD00000444.pdf/jcr:content/translations/en.CD00000444.pdf" H 2100 2600 50  0001 C CNN
-	1    2100 2650
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:C_Small C3
-U 1 1 61C7B0EF
-P 2550 2750
-F 0 "C3" H 2642 2796 50  0000 L CNN
-F 1 "0.1uF" H 2642 2705 50  0000 L CNN
-F 2 "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm" H 2550 2750 50  0001 C CNN
-F 3 "~" H 2550 2750 50  0001 C CNN
-	1    2550 2750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2550 2650 2400 2650
-Wire Wire Line
-	2550 2850 2550 2950
-Wire Wire Line
-	2550 2950 2100 2950
-$Comp
-L power:GND #PWR02
-U 1 1 61C7C2DA
-P 2100 3000
-F 0 "#PWR02" H 2100 2750 50  0001 C CNN
-F 1 "GND" H 2105 2827 50  0000 C CNN
-F 2 "" H 2100 3000 50  0001 C CNN
-F 3 "" H 2100 3000 50  0001 C CNN
-	1    2100 3000
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2100 3000 2100 2950
-Connection ~ 2100 2950
-$Comp
-L power:+5V #PWR07
-U 1 1 61C81082
-P 2550 2650
-F 0 "#PWR07" H 2550 2500 50  0001 C CNN
-F 1 "+5V" H 2565 2823 50  0000 C CNN
-F 2 "" H 2550 2650 50  0001 C CNN
-F 3 "" H 2550 2650 50  0001 C CNN
-	1    2550 2650
-	1    0    0    -1  
-$EndComp
-Connection ~ 2550 2650
 Wire Wire Line
 	4950 3050 4850 3050
 Wire Wire Line
@@ -513,8 +459,6 @@ F 3 "" H 8000 1600 50  0001 C CNN
 	1    8000 1600
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	1650 2650 1800 2650
 $Comp
 L Device:CP1 C5
 U 1 1 61D47C2A
@@ -536,17 +480,6 @@ F 2 "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm" H 2750 6350 50  0001 C CNN
 F 3 "~" H 2750 6350 50  0001 C CNN
 	1    2750 6350
 	0    -1   -1   0   
-$EndComp
-$Comp
-L power:+BATT #PWR01
-U 1 1 61D6AC6B
-P 1650 2650
-F 0 "#PWR01" H 1650 2500 50  0001 C CNN
-F 1 "+BATT" H 1665 2823 50  0000 C CNN
-F 2 "" H 1650 2650 50  0001 C CNN
-F 3 "" H 1650 2650 50  0001 C CNN
-	1    1650 2650
-	1    0    0    -1  
 $EndComp
 $Comp
 L power:+BATT #PWR08
@@ -720,17 +653,6 @@ F 3 "" H 7950 5300 50  0001 C CNN
 	1    7950 5300
 	1    0    0    -1  
 $EndComp
-$Comp
-L Transistor_BJT:2N3904 Q1
-U 1 1 61D094F6
-P 7350 5000
-F 0 "Q1" V 7585 5000 50  0000 C CNN
-F 1 "2N3904" V 7676 5000 50  0000 C CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline_Wide" H 7550 4925 50  0001 L CIN
-F 3 "https://www.onsemi.com/pub/Collateral/2N3903-D.PDF" H 7350 5000 50  0001 L CNN
-	1    7350 5000
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	7950 5100 7700 5100
 $Comp
@@ -760,21 +682,8 @@ Wire Wire Line
 Connection ~ 7700 5100
 Wire Wire Line
 	7700 5100 7550 5100
-$Comp
-L power:+3V3 #PWR015
-U 1 1 61D14F8F
-P 7350 4450
-F 0 "#PWR015" H 7350 4300 50  0001 C CNN
-F 1 "+3V3" H 7365 4623 50  0000 C CNN
-F 2 "" H 7350 4450 50  0001 C CNN
-F 3 "" H 7350 4450 50  0001 C CNN
-	1    7350 4450
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	7350 4750 7350 4800
-Text Label 6850 5100 2    50   ~ 0
-SERVO
 $Comp
 L Device:R_US R8
 U 1 1 61D19988
@@ -786,8 +695,6 @@ F 3 "~" H 7350 4600 50  0001 C CNN
 	1    7350 4600
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6850 5100 7150 5100
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 61D37DE8
@@ -820,4 +727,97 @@ Wire Wire Line
 Wire Wire Line
 	1550 1450 1900 1450
 NoConn ~ 2300 1350
+Wire Wire Line
+	1650 2650 1800 2650
+Connection ~ 2550 2650
+Connection ~ 2100 2950
+Wire Wire Line
+	2100 3000 2100 2950
+$Comp
+L power:GND #PWR02
+U 1 1 61C7C2DA
+P 2100 3000
+F 0 "#PWR02" H 2100 2750 50  0001 C CNN
+F 1 "GND" H 2105 2827 50  0000 C CNN
+F 2 "" H 2100 3000 50  0001 C CNN
+F 3 "" H 2100 3000 50  0001 C CNN
+	1    2100 3000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 2950 2100 2950
+Wire Wire Line
+	2550 2850 2550 2950
+Wire Wire Line
+	2550 2650 2400 2650
+$Comp
+L Device:C_Small C3
+U 1 1 61C7B0EF
+P 2550 2750
+F 0 "C3" H 2642 2796 50  0000 L CNN
+F 1 "0.1uF" H 2642 2705 50  0000 L CNN
+F 2 "Capacitor_THT:C_Disc_D3.0mm_W1.6mm_P2.50mm" H 2550 2750 50  0001 C CNN
+F 3 "~" H 2550 2750 50  0001 C CNN
+	1    2550 2750
+	1    0    0    -1  
+$EndComp
+$Comp
+L Regulator_Linear:L7805 U1
+U 1 1 61C79AB5
+P 2100 2650
+F 0 "U1" H 2100 2892 50  0000 C CNN
+F 1 "L7805" H 2100 2801 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 2125 2500 50  0001 L CIN
+F 3 "http://www.st.com/content/ccc/resource/technical/document/datasheet/41/4f/b3/b0/12/d4/47/88/CD00000444.pdf/files/CD00000444.pdf/jcr:content/translations/en.CD00000444.pdf" H 2100 2600 50  0001 C CNN
+	1    2100 2650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+BATT #PWR01
+U 1 1 61D6AC6B
+P 1650 2650
+F 0 "#PWR01" H 1650 2500 50  0001 C CNN
+F 1 "+BATT" H 1665 2823 50  0000 C CNN
+F 2 "" H 1650 2650 50  0001 C CNN
+F 3 "" H 1650 2650 50  0001 C CNN
+	1    1650 2650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR07
+U 1 1 61C81082
+P 2550 2650
+F 0 "#PWR07" H 2550 2500 50  0001 C CNN
+F 1 "+5V" H 2565 2823 50  0000 C CNN
+F 2 "" H 2550 2650 50  0001 C CNN
+F 3 "" H 2550 2650 50  0001 C CNN
+	1    2550 2650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Transistor_BJT:2N3904 Q1
+U 1 1 61D094F6
+P 7350 5000
+F 0 "Q1" V 7585 5000 50  0000 C CNN
+F 1 "2N3904" V 7676 5000 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline_Wide" H 7550 4925 50  0001 L CIN
+F 3 "https://www.onsemi.com/pub/Collateral/2N3903-D.PDF" H 7350 5000 50  0001 L CNN
+	1    7350 5000
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6850 5100 7150 5100
+Text Label 6850 5100 2    50   ~ 0
+SERVO
+$Comp
+L power:+3V3 #PWR015
+U 1 1 61D14F8F
+P 7350 4450
+F 0 "#PWR015" H 7350 4300 50  0001 C CNN
+F 1 "+3V3" H 7365 4623 50  0000 C CNN
+F 2 "" H 7350 4450 50  0001 C CNN
+F 3 "" H 7350 4450 50  0001 C CNN
+	1    7350 4450
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
