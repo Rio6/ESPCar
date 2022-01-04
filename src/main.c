@@ -10,17 +10,26 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <freertos/timers.h>
 
 #include <stdio.h>
 
 #include "secret.h"
 
-static void init_gpio(void) {
-    gpio_pad_select_gpio(4);
-    ESP_ERROR_CHECK(gpio_set_direction(4, GPIO_MODE_OUTPUT));
+static TimerHandle_t blink_timer;
 
-    gpio_pad_select_gpio(2);
-    ESP_ERROR_CHECK(gpio_set_direction(2, GPIO_MODE_OUTPUT));
+static void blink_timerr(TimerHandle_t timer) {
+    static int level = 0;
+    ESP_ERROR_CHECK(gpio_set_level(2, level));
+    level ^= 1;
+}
+
+static void init_gpio(void) {
+    const gpio_num_t outputs[] = { 2, 4, 12, 13, 14, 15 };
+    for(size_t i = 0; i < sizeof(outputs) / sizeof(outputs[0]); i++) {
+        gpio_pad_select_gpio(outputs[i]);
+        ESP_ERROR_CHECK(gpio_set_direction(outputs[i], GPIO_MODE_OUTPUT));
+    }
 }
 
 static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t event, void *data) {
@@ -37,10 +46,11 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t event, 
 static void ip_event_handler(void *arg, esp_event_base_t base, int32_t event, void *data) {
     switch(event) {
         case IP_EVENT_STA_GOT_IP:
-            gpio_set_level(2, 0);
+            xTimerStop(blink_timer, 0);
+            gpio_set_level(2, 1);
             break;
         case IP_EVENT_STA_LOST_IP:
-            gpio_set_level(2, 1);
+            xTimerStart(blink_timer, 0);
             break;
     }
 }
@@ -72,7 +82,7 @@ static void init_wifi(void) {
 
 static void init_camera(void) {
     camera_config_t camera_config = {
-        .pin_pwdn     = -1,
+        .pin_pwdn     = 32,
         .pin_reset    = -1,
         .pin_xclk     = 0,
         .pin_sscb_sda = 26,
@@ -90,12 +100,12 @@ static void init_camera(void) {
         .pin_href     = 23,
         .pin_pclk     = 22,
 
-        .xclk_freq_hz = 16000000,
+        .xclk_freq_hz = 10000000,
         .ledc_timer   = LEDC_TIMER_0,
         .ledc_channel = LEDC_CHANNEL_0,
 
         .pixel_format = PIXFORMAT_JPEG,
-        .frame_size   = FRAMESIZE_UXGA,
+        .frame_size   = FRAMESIZE_SXGA,
 
         .jpeg_quality = 12,
         .fb_count     = 2,
@@ -122,43 +132,17 @@ static void init_mcpwm(void) {
 }
 
 void app_main(void) {
-
     init_gpio();
-
-    gpio_set_level(2, 1);
-
     init_wifi();
     init_mcpwm();
     init_camera();
 
-    mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
-    mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B);
-    mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
-    mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
+    static StaticTimer_t timer;
+    blink_timer = xTimerCreateStatic(NULL, 500 / portTICK_PERIOD_MS, pdTRUE, 0, blink_timerr, &timer);
+    xTimerStart(blink_timer, 0);
 
-    while(1) {
-        mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, 50);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        /*
-        gpio_set_level(4, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        gpio_set_level(4, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        gpio_set_level(2, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        gpio_set_level(2, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        */
-    }
+    //mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B);
+    //mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B);
+    //mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
+    //mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
 }
