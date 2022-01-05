@@ -1,0 +1,15 @@
+dependencies:
+  espressif/esp32-camera:
+    component_hash: 9e8e3beb833688b29562d19f5c20b71802e6e4c1f0fa7431f8071d608269a7c8
+    source:
+      git: https://github.com/espressif/esp32-camera.git
+      type: git
+    version: 221d24da1901b6aee8df6c1a1160ad02faa685b5
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 4.4.0
+manifest_hash: 7adfb9f1de4220dbe86cb7eba24a3955ee3f4725a6774a8b45ea4b8106b83cc6
+target: esp32
+version: 1.0.0

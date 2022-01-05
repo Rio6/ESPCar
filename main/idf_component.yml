@@ -1,0 +1,7 @@
+## IDF Component Manager Manifest File
+dependencies:
+  idf:
+    version: ">=4.4.0"
+  espressif/esp32-camera:
+    git: https://github.com/espressif/esp32-camera.git
+    version: 221d24da1901b6aee8df6c1a1160ad02faa685b5

@@ -1,0 +1,7 @@
+menu "Project Configuration"
+   config WIFI_SSID
+      string "Wifi SSID"
+
+   config WIFI_PASS
+      string "Wifi Password"
+endmenu

@@ -7,7 +7,7 @@
 #include <freertos/task.h>
 
 #include "car.h"
-#include "secret.h"
+#include "sdkconfig.h"
 
 static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t event, void *data) {
     switch(event) {

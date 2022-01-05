@@ -1,5 +1,5 @@
-.pio
-.clang_complete
-.gcc-flags.json
-.ccls
-*.old
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+secure_boot_signing_key.pem
