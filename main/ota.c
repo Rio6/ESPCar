@@ -1,5 +1,8 @@
 #include <esp_ota_ops.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <lwip/sockets.h>
 
 static void ota_server_task(void *args) {
@@ -59,4 +62,7 @@ static void ota_server_task(void *args) {
 }
 
 void ota_init(void) {
+    static StaticTask_t buff;
+    static StackType_t stack[4096];
+    xTaskCreateStatic(ota_server_task, "OTA", sizeof(stack) / 4, NULL, tskIDLE_PRIORITY, stack, &buff);
 }

@@ -24,8 +24,8 @@ void led_init(void) {
     gpio_pad_select_gpio(4);
     ESP_ERROR_CHECK(gpio_set_direction(4, GPIO_MODE_OUTPUT));
 
-    static StaticTimer_t timer;
-    blink_timer = xTimerCreateStatic(NULL, 500 / portTICK_PERIOD_MS, pdTRUE, 0, blink_timer_handler, &timer);
+    static StaticTimer_t buff;
+    blink_timer = xTimerCreateStatic("LED", 1000 / portTICK_PERIOD_MS, pdTRUE, 0, blink_timer_handler, &buff);
 
     if(!blink_timer) {
         abort();
@@ -33,7 +33,7 @@ void led_init(void) {
 }
 
 void led_start(TickType_t interval) {
-    xTimerChangePeriod(blink_timer, interval, portMAX_DELAY);
+    xTimerChangePeriod(blink_timer, interval / portTICK_PERIOD_MS, portMAX_DELAY);
     xTimerStart(blink_timer, 0);
 }
 
