@@ -1,4 +1,3 @@
-#include <esp_event.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
 #include <esp_err.h>
@@ -32,7 +31,6 @@ static void ip_event_handler(void *arg, esp_event_base_t base, int32_t event, vo
 }
 
 void wifi_init(void) {
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_netif_init());
     esp_netif_create_default_wifi_sta();
 
@@ -40,7 +38,6 @@ void wifi_init(void) {
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, *ip_event_handler, NULL, NULL));
 
     wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
-    wifi_init_config.nvs_enable = false;
     ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_config));
 
     wifi_config_t wifi_config = {
