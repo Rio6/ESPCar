@@ -1,4 +1,8 @@
 menu "Project Configuration"
+   config CAMERA_FPS_CAP
+      int "Camera FPS Cap"
+      default 30
+
    config WIFI_SSID
       string "Wifi SSID"
 

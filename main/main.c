@@ -1,3 +1,4 @@
+#include <esp_ota_ops.h>
 #include <esp_log.h>
 #include <esp_event.h>
 #include <esp_err.h>
@@ -17,8 +18,17 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     led_init();
+    led_start(500);
+
     wifi_init();
     ota_init();
 
-    led_start(500);
+    // Don't run rest of the program if in factory mode
+    if(ota_is_factory()) return;
+
+    camera_init();
+
+    // Wait for some time then mark ota as valid
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    esp_ota_mark_app_valid_cancel_rollback();
 }
