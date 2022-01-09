@@ -6,6 +6,8 @@
 
 #include <lwip/sockets.h>
 
+#include "car.h"
+
 #define BUFF_SIZE 512
 
 static const char *TAG = "OTA";
@@ -24,6 +26,7 @@ static void ota_server_task(void *args) {
 
     while(1) {
         int fd = accept(lfd, NULL, NULL);
+
         esp_err_t err = ESP_OK;
         esp_ota_handle_t ota_handle;
         const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
@@ -36,10 +39,12 @@ static void ota_server_task(void *args) {
         ESP_LOGI(TAG, "Receiving OTA with size: %u", ota_size);
 
         err = esp_ota_begin(partition, ota_size, &ota_handle);
+        if(err != ESP_OK) goto loop_end;
 
         uint8_t *buff = malloc(BUFF_SIZE);
         if(!buff) {
             err = ESP_ERR_NO_MEM;
+            goto loop_end;
         }
 
         size_t received = 0;
@@ -61,14 +66,13 @@ static void ota_server_task(void *args) {
 
         if(err == ESP_OK) {
             err = esp_ota_end(ota_handle);
+            if(err != ESP_OK) goto loop_end;
+            err = esp_ota_set_boot_partition(partition);
         } else {
             esp_ota_abort(ota_handle); // ignore abort error
         }
 
-        if(err == ESP_OK) {
-            esp_ota_set_boot_partition(partition);
-        }
-
+loop_end:;
         const char *msg = esp_err_to_name(err);
         send(fd, msg, strlen(msg) + 1, 0);
         close(fd);
@@ -83,7 +87,9 @@ void ota_init(void) {
     static StaticTask_t buff;
     static StackType_t stack[5300];
     xTaskCreateStatic(ota_server_task, TAG, sizeof(stack), NULL, tskIDLE_PRIORITY+10, stack, &buff);
+}
 
+void ota_print_version(void) {
     const esp_partition_t *running_partition = esp_ota_get_running_partition();
     esp_app_desc_t app_desc;
 

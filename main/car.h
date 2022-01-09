@@ -9,4 +9,5 @@ void motor_init(void);
 void camera_init(void);
 
 void ota_init(void);
+void ota_print_version(void);
 bool ota_is_factory(void);

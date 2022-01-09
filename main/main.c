@@ -19,16 +19,17 @@ void app_main(void) {
 
     led_init();
     led_start(500);
-
     wifi_init();
-    ota_init();
 
-    // Don't run rest of the program if in factory mode
-    if(ota_is_factory()) return;
+    ota_print_version();
 
+    //if(ota_is_factory()) {
+    //    ota_init();
+    //} else {
+    //    camera_init();
+    //    // Wait for some time then mark ota as valid
+    //    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    //    esp_ota_mark_app_valid_cancel_rollback();
+    //}
     camera_init();
-
-    // Wait for some time then mark ota as valid
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
-    esp_ota_mark_app_valid_cancel_rollback();
 }

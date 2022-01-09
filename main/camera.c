@@ -13,7 +13,7 @@ static int min(size_t a, size_t b) {
     return a < b ? a : b;
 }
 
-static void camera_server_task(void *args) {
+static void camera_task(void *args) {
     int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     assert(fd >= 0);
 
@@ -28,7 +28,7 @@ static void camera_server_task(void *args) {
 
         struct sockaddr_in dest_addr = {
             .sin_family        = AF_INET,
-            .sin_port          = htons(32),
+            .sin_port          = htons(3232),
         };
         if(inet_pton(AF_INET, "192.168.0.30", &dest_addr.sin_addr) < 0) {
             goto loop_end;
@@ -47,7 +47,6 @@ static void camera_server_task(void *args) {
 loop_end:
         esp_camera_fb_return(fb);
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         TickType_t elapsed = xTaskGetTickCount() - start;
         if(elapsed < MIN_FRAME_TICK) {
             vTaskDelay(MIN_FRAME_TICK - elapsed);
@@ -80,15 +79,15 @@ void camera_init(void) {
         .ledc_channel = LEDC_CHANNEL_0,
 
         .pixel_format = PIXFORMAT_JPEG,
-        .frame_size   = FRAMESIZE_SXGA,
+        .frame_size   = FRAMESIZE_SVGA,
 
-        .jpeg_quality = 12,
+        .jpeg_quality = 5,
         .fb_count     = 2,
-        .grab_mode    = CAMERA_GRAB_WHEN_EMPTY,
+        .grab_mode    = CAMERA_GRAB_LATEST,
     };
     ESP_ERROR_CHECK(esp_camera_init(&camera_config));
 
     static StaticTask_t buff;
     static StackType_t stack[8192];
-    xTaskCreateStatic(camera_server_task, TAG, sizeof(stack), NULL, tskIDLE_PRIORITY+1, stack, &buff);
+    xTaskCreateStaticPinnedToCore(camera_task, TAG, sizeof(stack), NULL, tskIDLE_PRIORITY+1, stack, &buff, 0);
 }
