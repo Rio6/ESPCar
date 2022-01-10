@@ -2,7 +2,11 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
-#include <lwip/sockets.h>
+#include <lwip/api.h>
+
+#include <string.h>
+
+#include "proto.h"
 
 static const char *TAG = "camera";
 
@@ -14,8 +18,8 @@ static int min(size_t a, size_t b) {
 }
 
 static void camera_task(void *args) {
-    int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    assert(fd >= 0);
+    struct netconn *conn = netconn_new(NETCONN_UDP);
+    assert(conn != NULL);
 
     while(1) {
         TickType_t start = xTaskGetTickCount();
@@ -26,21 +30,26 @@ static void camera_task(void *args) {
             goto loop_end;
         }
 
-        struct sockaddr_in dest_addr = {
-            .sin_family        = AF_INET,
-            .sin_port          = htons(3232),
-        };
-        if(inet_pton(AF_INET, "192.168.0.30", &dest_addr.sin_addr) < 0) {
+        ip_addr_t dest_addr;
+        if(!ipaddr_aton("192.168.0.30", &dest_addr)) {
             goto loop_end;
         }
 
-        size_t sent = 0;
-        while(sent < fb->len) {
-            ssize_t len = sendto(fd, fb->buf + sent, min(fb->len - sent, MAX_PACKET_SIZE),
-                    0, (struct sockaddr*) &dest_addr, sizeof(dest_addr));
-            if(len < 0) {
-                break;
-            }
+        for(size_t sent = 0; sent < fb->len;) {
+            size_t len = min(fb->len - sent, MAX_PACKET_SIZE /*- HEADER_SIZE*/);
+            struct netbuf buf = {0};
+            uint8_t *buf_data = netbuf_alloc(&buf, /*HEADER_SIZE + */len);
+            if(!buf_data) goto loop_end;
+
+            //buf_data[0] = FRAMETYPE_VIDEO;
+            //buf_data[1] = len >> 7 & 0xFF;
+            //buf_data[2] = len      & 0xFF;
+            memcpy(buf_data /*+ HEADER_SIZE*/, fb->buf + sent, len);
+
+            err_t err = netconn_sendto(conn, &buf, &dest_addr, CONFIG_CAMERA_PORT);
+            netbuf_free(&buf);
+            if(err != ERR_OK) goto loop_end;
+
             sent += len;
         }
 

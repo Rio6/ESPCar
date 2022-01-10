@@ -3,6 +3,10 @@ menu "Project Configuration"
       int "Camera FPS Cap"
       default 30
 
+   config CAMERA_PORT
+      int "Camera port"
+      default 3232
+
    config WIFI_SSID
       string "Wifi SSID"
 

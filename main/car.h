@@ -1,3 +1,4 @@
+#pragma once
 #include <freertos/FreeRTOS.h>
 
 void led_init(void);
