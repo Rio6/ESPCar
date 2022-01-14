@@ -10,7 +10,6 @@
 
 static const char *TAG = "camera";
 
-#define MAX_PACKET_SIZE 400
 #define MIN_FRAME_TICK 1000 / CONFIG_CAMERA_FPS_CAP / portTICK_PERIOD_MS
 
 static int min(size_t a, size_t b) {
@@ -96,7 +95,5 @@ void camera_init(void) {
     };
     ESP_ERROR_CHECK(esp_camera_init(&camera_config));
 
-    static StaticTask_t buff;
-    static StackType_t stack[8192];
-    xTaskCreateStaticPinnedToCore(camera_task, TAG, sizeof(stack), NULL, tskIDLE_PRIORITY+1, stack, &buff, 0);
+    xTaskCreate(camera_task, TAG, 8192, NULL, tskIDLE_PRIORITY+1, NULL);
 }
