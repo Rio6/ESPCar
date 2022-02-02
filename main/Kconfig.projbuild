@@ -1,4 +1,8 @@
 menu "Project Configuration"
+   config MAX_CONNECTION
+      int "Max numberof connections"
+      default 10
+
    config CAMERA_FPS_CAP
       int "Camera FPS Cap"
       default 30

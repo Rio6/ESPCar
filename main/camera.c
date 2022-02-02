@@ -2,6 +2,9 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <lwip/api.h>
 
 #include <string.h>
@@ -30,7 +33,7 @@ static void camera_task(void *args) {
         }
 
         ip_addr_t dest_addr;
-        if(!ipaddr_aton("192.168.0.30", &dest_addr)) {
+        if(!ipaddr_aton("192.168.0.28", &dest_addr)) {
             goto loop_end;
         }
 

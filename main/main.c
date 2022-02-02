@@ -32,5 +32,7 @@ void app_main(void) {
     //    esp_ota_mark_app_valid_cancel_rollback();
     //}
     //camera_init();
-    mic_init();
+    //mic_init();
+    motor_init();
+    control_init();
 }
