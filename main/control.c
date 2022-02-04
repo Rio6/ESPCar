@@ -1,112 +1,100 @@
+#include <esp_log.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <freertos/event_groups.h>
 
 #include <lwip/api.h>
-#include <lwip/pbuf.h>
+#include <lwip/ip_addr.h>
 
 #include "car.h"
+#include "proto.h"
 #include "sdkconfig.h"
+
+static const char *TAG = "CONTROL";
 
 enum conn_state {
     DISCONNECTED = 0,
     CONNECTED,
 };
 
-struct conn {
-    struct netconn *netconn;
+struct conn_info {
     enum conn_state state;
-} connections[CONFIG_MAX_CONNECTION] = {0};
-#define connections_len (sizeof(connections) / sizeof(connections[0]))
+    ip_addr_t addr;
+    uint32_t port;
+    uint64_t last_recv_time;
+} conn_infos[CONFIG_MAX_CONNECTION] = {0};
+#define conn_infos_len (sizeof(conn_infos) / sizeof(conn_infos[0]))
 
-static EventGroupHandle_t conn_event_bits;
+static struct conn_info *find_conn(ip_addr_t *addr) {
+    uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    struct conn_info *empty = NULL;
+    for(unsigned i = 0; i < conn_infos_len; i++) {
+        if(now - conn_infos[i].last_recv_time > CONFIG_CONNECTION_TIMEOUT) {
+            conn_infos[i].state = DISCONNECTED;
+        }
 
-static struct conn *find_free_conn(void) {
-    for(unsigned i = 0; i < connections_len; i++) {
-        if(connections[i].state == DISCONNECTED) {
-            return &connections[i];
+        if(addr && ip_addr_cmp(&conn_infos[i].addr, addr)) {
+            return &conn_infos[i];
+        }
+
+        if(!empty && conn_infos[i].state == DISCONNECTED) {
+            empty = &conn_infos[i];
         }
     }
-    return NULL;
-}
-
-static int16_t bytes_to_int16(uint8_t *data) {
-    return ntohs(*((uint16_t*) data));
+    return empty;
 }
 
 static void control_server(void *params) {
-    struct netconn *server_conn = netconn_new(NETCONN_TCP);
-    assert(server_conn != NULL);
+    struct netconn *conn = netconn_new(NETCONN_UDP);
+    assert(conn != NULL);
 
-    netconn_bind(server_conn, IP4_ADDR_ANY, 3232);
-    netconn_listen(server_conn);
+    err_t err = netconn_bind(conn, IP4_ADDR_ANY, 3232);
+    assert(err == ERR_OK);
 
     while(1) {
-        struct netconn *netconn;
-        netconn_accept(server_conn, &netconn);
+        struct netbuf *buff = NULL;
 
-        struct conn *conn = find_free_conn();
-        if(!conn) {
-            netconn_close(netconn);
-            continue;
+        err_t err = netconn_recv(conn, &buff);
+        if(err != ERR_OK) goto loop_end;
+
+        ip_addr_t *addr = netbuf_fromaddr(buff);
+        struct conn_info *conn_info = find_conn(addr);
+        if(!conn_info) goto loop_end;
+
+        uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+        if(conn_info->state == DISCONNECTED) {
+            ESP_LOGI(TAG, "new connection from %s", ipaddr_ntoa(addr));
+            conn_info->state = CONNECTED;
         }
+        ip_addr_set(&conn_info->addr, addr);
+        conn_info->port = netbuf_fromport(buff);
+        conn_info->last_recv_time = now;
 
-        conn->netconn = netconn;
-        conn->state = CONNECTED;
-        xEventGroupSetBits(conn_event_bits, 1);
-    }
-}
+        void *data = NULL;
+        uint16_t len = 0;
+        netbuf_data(buff, &data, &len);
 
-static void control_handler(void *params) {
-    while(1) {
-        xEventGroupWaitBits(conn_event_bits, 1, false, false, portMAX_DELAY);
-
-        int conn_count = 0;
-        for(unsigned i = 0; i < connections_len; i++) {
-            if(connections[i].state != CONNECTED) continue;
-            struct netconn *conn = connections[i].netconn;
-
-            struct pbuf *buff = NULL;
-            err_t err = netconn_recv_tcp_pbuf_flags(conn, &buff, NETCONN_DONTBLOCK);
-
-            if(err == ERR_WOULDBLOCK) {
-                continue;
-            }
-
-            if(err != ERR_OK) {
-                netconn_close(conn);
-                connections[i].netconn = NULL;
-                connections[i].state = DISCONNECTED;
-                continue;
-            }
-
-            conn_count++;
-
-            for(size_t i = 0; buff && i < buff->len; i++) {
-                uint8_t *data = buff->payload + i;
-                size_t len = buff->len - i;
-                switch(data[0]) {
-                    case 'M':
-                        if(len < 5) break;
-                        motor_move(bytes_to_int16(data + 1), bytes_to_int16(data + sizeof(int16_t) + 1));
-                        i += 4;
+        for(uint16_t i = 0; i + COMMAND_SIZE <= len; i += COMMAND_SIZE) {
+            struct command *cmd = data + i;
+            switch(cmd->type) {
+                case 'M':
+                    {
+                        float x = (float) ((int16_t) ntohs(cmd->x)) / INT16_MAX * 100;
+                        float y = (float) ((int16_t) ntohs(cmd->y)) / INT16_MAX * 100;
+                        motor_move(y + x, y - x);
                         break;
-                    default:
-                        break;
-                }
+                    }
+                default:
+                    break;
             }
-
-            pbuf_free(buff);
         }
 
-        if(conn_count == 0) {
-            xEventGroupClearBits(conn_event_bits, 1);
-        }
+loop_end:
+        netbuf_delete(buff);
     }
 }
 
 void control_init(void) {
-    conn_event_bits = xEventGroupCreate();
-    xTaskCreate(control_server, "control server", 8192, NULL, tskIDLE_PRIORITY+1, NULL);
-    xTaskCreate(control_handler, "control handler", 8192, NULL, tskIDLE_PRIORITY+2, NULL);
+    xTaskCreate(control_server, TAG, 8192, NULL, tskIDLE_PRIORITY+1, NULL);
 }

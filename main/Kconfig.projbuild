@@ -3,6 +3,10 @@ menu "Project Configuration"
       int "Max numberof connections"
       default 10
 
+   config CONNECTION_TIMEOUT
+      int "Milliseconds before closing idle connection"
+      default 10000
+
    config CAMERA_FPS_CAP
       int "Camera FPS Cap"
       default 30

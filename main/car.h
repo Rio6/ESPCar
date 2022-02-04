@@ -11,7 +11,7 @@ void camera_init(void);
 void mic_init(void);
 
 void motor_init(void);
-void motor_move(int16_t, int16_t);
+void motor_move(float, float);
 
 void ota_init(void);
 void ota_print_version(void);
