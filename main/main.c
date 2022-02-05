@@ -31,7 +31,8 @@ void app_main(void) {
     //    vTaskDelay(3000 / portTICK_PERIOD_MS);
     //    esp_ota_mark_app_valid_cancel_rollback();
     //}
-    //camera_init();
+
+    camera_init();
     //mic_init();
     motor_init();
     control_init();

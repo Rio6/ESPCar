@@ -12,18 +12,7 @@
 
 static const char *TAG = "CONTROL";
 
-enum conn_state {
-    DISCONNECTED = 0,
-    CONNECTED,
-};
-
-struct conn_info {
-    enum conn_state state;
-    ip_addr_t addr;
-    uint32_t port;
-    uint64_t last_recv_time;
-} conn_infos[CONFIG_MAX_CONNECTION] = {0};
-#define conn_infos_len (sizeof(conn_infos) / sizeof(conn_infos[0]))
+struct conn_info conn_infos[CONFIG_MAX_CONNECTION] = {0};
 
 static struct conn_info *find_conn(ip_addr_t *addr) {
     uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
@@ -48,7 +37,7 @@ static void control_server(void *params) {
     struct netconn *conn = netconn_new(NETCONN_UDP);
     assert(conn != NULL);
 
-    err_t err = netconn_bind(conn, IP4_ADDR_ANY, 3232);
+    err_t err = netconn_bind(conn, IP4_ADDR_ANY, CONFIG_CONTROL_PORT);
     assert(err == ERR_OK);
 
     while(1) {
@@ -65,10 +54,11 @@ static void control_server(void *params) {
 
         if(conn_info->state == DISCONNECTED) {
             ESP_LOGI(TAG, "new connection from %s", ipaddr_ntoa(addr));
+            ip_addr_set(&conn_info->addr, addr);
+            conn_info->port = netbuf_fromport(buff);
             conn_info->state = CONNECTED;
         }
-        ip_addr_set(&conn_info->addr, addr);
-        conn_info->port = netbuf_fromport(buff);
+
         conn_info->last_recv_time = now;
 
         void *data = NULL;
@@ -78,6 +68,9 @@ static void control_server(void *params) {
         for(uint16_t i = 0; i + COMMAND_SIZE <= len; i += COMMAND_SIZE) {
             struct command *cmd = data + i;
             switch(cmd->type) {
+                case 'X':
+                    conn_info->state = DISCONNECTED;
+                    break;
                 case 'M':
                     {
                         float x = (float) ((int16_t) ntohs(cmd->x)) / INT16_MAX * 100;
@@ -96,5 +89,21 @@ loop_end:
 }
 
 void control_init(void) {
-    xTaskCreate(control_server, TAG, 8192, NULL, tskIDLE_PRIORITY+1, NULL);
+    xTaskCreate(control_server, TAG, 2048, NULL, tskIDLE_PRIORITY+1, NULL);
+}
+
+struct conn_info **control_get_clients(void) {
+    static struct conn_info *clients[conn_infos_len + 1];
+    uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    size_t c = 0;
+    for(size_t i = 0; i < conn_infos_len; i++) {
+        if(now - conn_infos[i].last_recv_time > CONFIG_CONNECTION_TIMEOUT) {
+            conn_infos[i].state = DISCONNECTED;
+        } else if(conn_infos[i].state == CONNECTED) {
+            clients[c++] = &conn_infos[i];
+        }
+    }
+    clients[c] = NULL;
+    return clients;
 }

@@ -5,14 +5,14 @@ menu "Project Configuration"
 
    config CONNECTION_TIMEOUT
       int "Milliseconds before closing idle connection"
-      default 10000
+      default 3000
 
    config CAMERA_FPS_CAP
       int "Camera FPS Cap"
       default 30
 
-   config CAMERA_PORT
-      int "Camera port"
+   config CONTROL_PORT
+      int "Control Port"
       default 3232
 
    config WIFI_SSID

@@ -25,3 +25,16 @@ struct command {
       };
    };
 } __attribute__((packed));
+
+enum conn_state {
+    DISCONNECTED = 0,
+    CONNECTED,
+};
+
+#define conn_infos_len (sizeof(conn_infos) / sizeof(conn_infos[0]))
+struct conn_info {
+    enum conn_state state;
+    ip_addr_t addr;
+    uint32_t port;
+    uint64_t last_recv_time;
+};

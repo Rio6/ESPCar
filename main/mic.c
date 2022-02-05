@@ -1,3 +1,4 @@
+#if 0
 #include <esp_err.h>
 #include <esp_log.h>
 
@@ -84,3 +85,4 @@ void mic_init(void) {
    ESP_ERROR_CHECK(timer_isr_callback_add(TIMER_GROUP_0, TIMER_0, mic_isr, NULL, 0/*ESP_INTR_FLAG_IRAM*/));
    ESP_ERROR_CHECK(timer_start(TIMER_GROUP_0, TIMER_0));
 }
+#endif

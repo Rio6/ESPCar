@@ -9,6 +9,7 @@
 
 #include <string.h>
 
+#include "car.h"
 #include "proto.h"
 
 static const char *TAG = "camera";
@@ -26,38 +27,42 @@ static void camera_task(void *args) {
     while(1) {
         TickType_t start = xTaskGetTickCount();
 
+        struct conn_info **dests = control_get_clients();
+        if(*dests == NULL) {
+            // no clients
+            goto loop_end_nofb;
+        }
+
         camera_fb_t *fb = esp_camera_fb_get();
         if(!fb) {
             ESP_LOGE(TAG, "Error getting frame buffer");
             goto loop_end;
         }
 
-        ip_addr_t dest_addr;
-        if(!ipaddr_aton("192.168.0.28", &dest_addr)) {
-            goto loop_end;
-        }
+        for(struct conn_info **dest = dests; *dest != NULL; dest++) {
+            for(size_t sent = 0; sent < fb->len;) {
+                size_t len = min(fb->len - sent, MAX_PACKET_SIZE /*- HEADER_SIZE*/);
+                struct netbuf buf = {0};
+                uint8_t *buf_data = netbuf_alloc(&buf, /*HEADER_SIZE + */len);
+                if(!buf_data) goto loop_end;
 
-        for(size_t sent = 0; sent < fb->len;) {
-            size_t len = min(fb->len - sent, MAX_PACKET_SIZE /*- HEADER_SIZE*/);
-            struct netbuf buf = {0};
-            uint8_t *buf_data = netbuf_alloc(&buf, /*HEADER_SIZE + */len);
-            if(!buf_data) goto loop_end;
+                //buf_data[0] = FRAMETYPE_VIDEO;
+                //buf_data[1] = len >> 7 & 0xFF;
+                //buf_data[2] = len      & 0xFF;
+                memcpy(buf_data /*+ HEADER_SIZE*/, fb->buf + sent, len);
 
-            //buf_data[0] = FRAMETYPE_VIDEO;
-            //buf_data[1] = len >> 7 & 0xFF;
-            //buf_data[2] = len      & 0xFF;
-            memcpy(buf_data /*+ HEADER_SIZE*/, fb->buf + sent, len);
+                err_t err = netconn_sendto(conn, &buf, &(*dest)->addr, CONFIG_CONTROL_PORT /*(*dest)->port*/);
+                netbuf_free(&buf);
+                if(err != ERR_OK) goto loop_end;
 
-            err_t err = netconn_sendto(conn, &buf, &dest_addr, CONFIG_CAMERA_PORT);
-            netbuf_free(&buf);
-            if(err != ERR_OK) goto loop_end;
-
-            sent += len;
+                sent += len;
+            }
         }
 
 loop_end:
         esp_camera_fb_return(fb);
 
+loop_end_nofb:;
         TickType_t elapsed = xTaskGetTickCount() - start;
         if(elapsed < MIN_FRAME_TICK) {
             vTaskDelay(MIN_FRAME_TICK - elapsed);
