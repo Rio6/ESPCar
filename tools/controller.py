@@ -50,8 +50,8 @@ def send():
 def onmove(x, y):
     global lx, ly
     if origin is not None:
-        lx = int(clamp(x - origin[0], -500, 500) /  500 * 2**15)
-        ly = int(clamp(y - origin[1], -500, 500) / -500 * 2**15)
+        lx = int(clamp(x - origin[0], -500, 500) /  500 * (2**15 - 1))
+        ly = int(clamp(y - origin[1], -500, 500) / -500 * (2**15 - 1))
 
 def onclick(x, y, btn, press):
     global origin, lx, ly
