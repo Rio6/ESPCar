@@ -17,8 +17,16 @@ static struct {
     int16_t y;
 } current_status = {0};
 
-struct netconn *conn = NULL;
-struct conn_info conn_infos[CONFIG_MAX_CONNECTION] = {0};
+#define conn_infos_len (sizeof(conn_infos) / sizeof(conn_infos[0]))
+static struct conn_info conn_infos[CONFIG_MAX_CONNECTION] = {0};
+static struct netconn *conn = NULL;
+static size_t conn_count = 0;
+
+static float clamp(float n, float min, float max) {
+    if(n < min) return min;
+    if(n > max) return max;
+    return n;
+}
 
 static struct conn_info *find_conn(ip_addr_t *addr) {
     struct conn_info *empty = NULL;
@@ -35,9 +43,14 @@ static struct conn_info *find_conn(ip_addr_t *addr) {
 }
 
 static void disconnect_conn(struct conn_info *conn_info) {
-    if(!conn_info) return;
-    ESP_LOGI(TAG, "disconnect from %s", ipaddr_ntoa(&conn_info->addr));
+    if(!conn_info || conn_info->state == DISCONNECTED) return;
+    ESP_LOGI(TAG, "disconnect from %s, conn count: %u", ipaddr_ntoa(&conn_info->addr), conn_count);
     conn_info->state = DISCONNECTED;
+    conn_count--;
+
+    if(conn_count == 0) {
+        motor_move(0, 0);
+    }
 }
 
 struct conn_info **control_get_clients(void) {
@@ -73,8 +86,8 @@ static void control_server(void *params) {
                 struct status *status = (struct status*) buf_data;
                 status->header.size = STATUS_SIZE;
                 status->header.type = FRAMETYPE_STATUS;
-                status->x = htons(current_status.x);
-                status->y = htons(current_status.y);
+                status->x = (int16_t) htons(current_status.x);
+                status->y = (int16_t) htons(current_status.y);
 
                 err_t err = netconn_sendto(conn, &send_buf, &(*client)->addr, (*client)->port);
                 if(err != ERR_OK) {
@@ -99,6 +112,7 @@ static void control_server(void *params) {
             ESP_LOGI(TAG, "new connection from %s", ipaddr_ntoa(addr));
             ip_addr_set(&conn_info->addr, addr);
             conn_info->state = CONNECTED;
+            conn_count++;
         }
 
         conn_info->port = netbuf_fromport(buff);
@@ -111,16 +125,19 @@ static void control_server(void *params) {
         for(uint16_t i = 0; i + COMMAND_SIZE <= len; i += COMMAND_SIZE) {
             struct command *cmd = data + i;
             switch(cmd->type) {
-                case 'X':
+                case DISCONNECT:
                     disconnect_conn(&conn_infos[i]);
                     break;
-                case 'M':
+                case RESET:
+                    esp_restart();
+                    break;
+                case MOVE:
                     {
                         current_status.x = ntohs(cmd->x);
                         current_status.y = ntohs(cmd->y);
                         float x = (float) ((int16_t) current_status.x) / INT16_MAX * 100;
                         float y = (float) ((int16_t) current_status.y) / INT16_MAX * 100;
-                        motor_move(y + x, y - x);
+                        motor_move(clamp(y + x, -100, 100), clamp(y - x, -100, 100));
                         break;
                     }
                 default:

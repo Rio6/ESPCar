@@ -11,6 +11,7 @@ enum frametype {
 enum commandtype {
    MOVE       = 'M',
    DISCONNECT = 'X',
+   RESET      = 'R',
 } __attribute__((__packed__));
 
 #define HEADER_SIZE sizeof(struct frameheader)
@@ -43,7 +44,6 @@ enum conn_state {
     CONNECTED,
 };
 
-#define conn_infos_len (sizeof(conn_infos) / sizeof(conn_infos[0]))
 struct conn_info {
     enum conn_state state;
     ip_addr_t addr;
