@@ -1,7 +1,7 @@
 menu "Project Configuration"
    config MAX_CONNECTION
       int "Max numberof connections"
-      default 10
+      default 5
 
    config CONNECTION_TIMEOUT
       int "Milliseconds before closing idle connection"

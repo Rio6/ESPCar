@@ -21,7 +21,7 @@ static int min(size_t a, size_t b) {
 }
 
 static void camera_task(void *args) {
-    struct netconn *conn = netconn_new(NETCONN_UDP);
+    struct netconn *conn = control_get_conn();
     assert(conn != NULL);
 
     while(1) {
@@ -41,19 +41,22 @@ static void camera_task(void *args) {
 
         for(struct conn_info **dest = dests; *dest != NULL; dest++) {
             for(size_t sent = 0; sent < fb->len;) {
-                size_t len = min(fb->len - sent, MAX_PACKET_SIZE /*- HEADER_SIZE*/);
+                size_t len = min(fb->len - sent, MAX_PACKET_SIZE - HEADER_SIZE);
                 struct netbuf buf = {0};
-                uint8_t *buf_data = netbuf_alloc(&buf, /*HEADER_SIZE + */len);
+                uint8_t *buf_data = netbuf_alloc(&buf, HEADER_SIZE + len);
                 if(!buf_data) goto loop_end;
 
-                //buf_data[0] = FRAMETYPE_VIDEO;
-                //buf_data[1] = len >> 7 & 0xFF;
-                //buf_data[2] = len      & 0xFF;
-                memcpy(buf_data /*+ HEADER_SIZE*/, fb->buf + sent, len);
+                struct frameheader *header = (struct frameheader*) buf_data;
+                header->size = HEADER_SIZE + len;
+                header->type = FRAMETYPE_VIDEO;
+                memcpy(buf_data + HEADER_SIZE, fb->buf + sent, len);
 
-                err_t err = netconn_sendto(conn, &buf, &(*dest)->addr, CONFIG_CONTROL_PORT /*(*dest)->port*/);
+                err_t err = netconn_sendto(conn, &buf, &(*dest)->addr, (*dest)->port);
                 netbuf_free(&buf);
-                if(err != ERR_OK) goto loop_end;
+                if(err != ERR_OK) {
+                    ESP_LOGE(TAG, "Error sending frame: %s", lwip_strerr(err));
+                    goto loop_end;
+                }
 
                 sent += len;
             }
@@ -103,5 +106,7 @@ void camera_init(void) {
     };
     ESP_ERROR_CHECK(esp_camera_init(&camera_config));
 
-    xTaskCreate(camera_task, TAG, 8192, NULL, tskIDLE_PRIORITY+1, NULL);
+    static StaticTask_t buff;
+    static StackType_t stack[8192];
+    xTaskCreateStatic(camera_task, TAG, sizeof(stack) / sizeof(stack[0]), NULL, tskIDLE_PRIORITY+1, stack, &buff);
 }

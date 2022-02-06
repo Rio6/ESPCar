@@ -1,4 +1,3 @@
-#include <esp_ota_ops.h>
 #include <esp_log.h>
 #include <esp_event.h>
 #include <esp_err.h>
@@ -21,8 +20,7 @@ void app_main(void) {
     led_start(500);
     wifi_init();
 
-    ota_print_version();
-
+    //ota_print_version();
     //if(ota_is_factory()) {
     //    ota_init();
     //} else {
@@ -32,8 +30,8 @@ void app_main(void) {
     //    esp_ota_mark_app_valid_cancel_rollback();
     //}
 
-    camera_init();
-    //mic_init();
     motor_init();
     control_init();
+    camera_init();
+    //mic_init();
 }

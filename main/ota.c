@@ -1,3 +1,4 @@
+#if 0
 #include <esp_log.h>
 #include <esp_ota_ops.h>
 
@@ -107,3 +108,4 @@ bool ota_is_factory(void) {
     assert(running_partition != NULL);
     return ESP_PARTITION_SUBTYPE_APP_FACTORY == running_partition->subtype;
 }
+#endif
