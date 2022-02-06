@@ -1,5 +1,7 @@
+#!/usr/bin/env python
 import socket, time, struct, sys, threading, subprocess, select
 from pynput import mouse, keyboard
+from dns import resolver
 
 cmdfmt = '>c2h'
 headerfmt = '>Bc'
@@ -68,6 +70,16 @@ def onkey(key):
 
 def main():
     global conn, running, ffplay
+
+    # mdns
+    res = resolver.Resolver()
+    res.nameservers = ['224.0.0.251']
+    res.port = 5353
+    try:
+        addr = res.resolve('espcar.local')[0]
+    except resolver.LifetimeTimeout:
+        print("Can't find ESPCar")
+        sys.exit(1)
 
     ffplay = subprocess.Popen(
         ['ffplay', '-f', 'mjpeg', '-vf', 'hflip,vflip', '-i', '-'],

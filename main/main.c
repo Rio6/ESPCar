@@ -2,6 +2,7 @@
 #include <esp_event.h>
 #include <esp_err.h>
 #include <nvs_flash.h>
+#include <mdns.h>
 #include "car.h"
 
 void app_main(void) {
@@ -15,6 +16,11 @@ void app_main(void) {
 
     // Event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // MDNS
+    ESP_ERROR_CHECK(mdns_init());
+    mdns_hostname_set("espcar");
+    mdns_instance_name_set("ESP32 Car");
 
     led_init();
     led_start(500);
