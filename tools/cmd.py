@@ -1,7 +1,7 @@
 import socket, time, struct, sys, threading, signal, subprocess
 
 cmdfmt = '>c2h'
-headerfmt = '>Bc6s'
+headerfmt = '>Bc'
 
 running = False
 conn = None
@@ -16,16 +16,14 @@ def recv():
     global rx, ry
 
     while running:
-        size = int.from_bytes(conn.recv(1), 'big')
-
-        data = conn.recv(size)
+        data = conn.recv(1024)
 
         if chr(data[1]) == 'S':
             status = struct.unpack(headerfmt + '2h', data)
-            rx = status[3]
-            yx = status[4]
+            rx = status[2]
+            yx = status[3]
         elif chr(data[1]) == 'V':
-            ffplay.communicate(data[8:])
+            ffplay.stdin.write(data[2:])
 
 def send():
     lastsend = 0
@@ -39,12 +37,15 @@ def send():
 def main():
     global conn, running, ffplay
 
-    ffplay = subprocess.Popen(['ffplay', '-f', 'mjpeg', '-i', '-'], stderr=subprocess.DEVNULL)
+    ffplay = subprocess.Popen(
+        ['ffplay', '-f', 'mjpeg', '-i', '-'],
+        stdin=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
 
     conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     conn.connect(('192.168.0.43', 3232))
     conn.send(struct.pack(cmdfmt, b'.', 0, 0))
-    print(conn.getsockname())
 
     print("starting")
     running = True
@@ -55,7 +56,7 @@ def main():
     recv_thread.start()
     send_thread.start()
 
-    signal.sigwait([signal.SIGINT])
+    signal.sigwait([signal.SIGINT,])
 
     print("stopping")
     running = False

@@ -53,7 +53,11 @@ static void camera_task(void *args) {
 
                 err_t err = netconn_sendto(conn, &buf, &(*dest)->addr, (*dest)->port);
                 netbuf_free(&buf);
-                if(err != ERR_OK) {
+
+                if(err == ERR_MEM) {
+                    vTaskDelay(1);
+                    continue;
+                } if(err != ERR_OK) {
                     ESP_LOGE(TAG, "Error sending frame: %s", lwip_strerr(err));
                     goto loop_end;
                 }

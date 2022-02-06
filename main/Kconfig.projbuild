@@ -7,6 +7,10 @@ menu "Project Configuration"
       int "Milliseconds before closing idle connection"
       default 3000
 
+   config STATUS_INTERVAL
+      int "Milliseconds between each status update"
+      default 50
+
    config CAMERA_FPS_CAP
       int "Camera FPS Cap"
       default 30

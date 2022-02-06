@@ -60,24 +60,30 @@ struct conn_info **control_get_clients(void) {
 
 static void control_server(void *params) {
     while(1) {
+        uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
         // remove timeout'd clients and send info
-        for(struct conn_info **client = control_get_clients(); *client != NULL; client++) {
-            struct netbuf send_buf = {0};
-            uint8_t *buf_data = netbuf_alloc(&send_buf, STATUS_SIZE);
-            if(!buf_data) goto loop_end;
+        static uint64_t last_status_time = 0;
+        if(now - last_status_time > CONFIG_STATUS_INTERVAL) {
+            for(struct conn_info **client = control_get_clients(); *client != NULL; client++) {
+                struct netbuf send_buf = {0};
+                uint8_t *buf_data = netbuf_alloc(&send_buf, STATUS_SIZE);
+                if(!buf_data) goto loop_end;
 
-            struct status *status = (struct status*) buf_data;
-            status->header.size = STATUS_SIZE;
-            status->header.type = FRAMETYPE_STATUS;
-            status->x = htons(current_status.x);
-            status->y = htons(current_status.y);
+                struct status *status = (struct status*) buf_data;
+                status->header.size = STATUS_SIZE;
+                status->header.type = FRAMETYPE_STATUS;
+                status->x = htons(current_status.x);
+                status->y = htons(current_status.y);
 
-            err_t err = netconn_sendto(conn, &send_buf, &(*client)->addr, (*client)->port);
-            if(err != ERR_OK) {
-                ESP_LOGE(TAG, "Error sending status: %s", lwip_strerr(err));
+                err_t err = netconn_sendto(conn, &send_buf, &(*client)->addr, (*client)->port);
+                if(err != ERR_OK) {
+                    ESP_LOGE(TAG, "Error sending status: %s", lwip_strerr(err));
+                }
+
+                netbuf_free(&send_buf);
             }
-
-            netbuf_free(&send_buf);
+            last_status_time = now;
         }
 
         // receive commands
@@ -88,8 +94,6 @@ static void control_server(void *params) {
         ip_addr_t *addr = netbuf_fromaddr(buff);
         struct conn_info *conn_info = find_conn(addr);
         if(!conn_info) goto loop_end;
-
-        uint64_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
         if(conn_info->state == DISCONNECTED) {
             ESP_LOGI(TAG, "new connection from %s", ipaddr_ntoa(addr));

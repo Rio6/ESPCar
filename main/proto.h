@@ -17,7 +17,6 @@ enum commandtype {
 struct frameheader {
    uint8_t size;
    enum frametype type;
-   uint8_t rsd[6];
 } __attribute__((packed));
 
 #define STATUS_SIZE sizeof(struct status)
